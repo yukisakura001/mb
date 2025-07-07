@@ -48,5 +48,15 @@
         "description": "config.json を開く"
       }
     ]
+  },
+  {
+    "name": "npm",
+    "commands": [
+      {
+        "name": "npm run dev",
+        "run": "npm run dev",
+        "description": "実行"
+      }
+    ]
   }
 ]
