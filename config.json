@@ -1,0 +1,52 @@
+[
+  {
+    "name": "mb",
+    "commands": [
+      {
+        "name": "init",
+        "run": "mb init",
+        "description": "初期化"
+      },
+      {
+        "name": "run",
+        "run": "mb run",
+        "description": "カテゴリを選択"
+      },
+      {
+        "name": "cat",
+        "run": "mb cat <カテゴリ>",
+        "description": "指定カテゴリで実行"
+      },
+      {
+        "name": "newcat",
+        "run": "mb newcat",
+        "description": "新しいカテゴリを作成"
+      },
+      {
+        "name": "newcmd",
+        "run": "mb newcmd",
+        "description": "カテゴリにコマンドを追加"
+      },
+      {
+        "name": "delcat",
+        "run": "mb delcat",
+        "description": "カテゴリを削除"
+      },
+      {
+        "name": "delcmd",
+        "run": "mb delcmd",
+        "description": "カテゴリからコマンドを削除"
+      },
+      {
+        "name": "find",
+        "run": "mb find <検索文字列> [--n] [--d] [--c]",
+        "description": "コマンドを検索[--name] [--description] [--command]"
+      },
+      {
+        "name": "open",
+        "run": "mb open",
+        "description": "config.json を開く"
+      }
+    ]
+  }
+]

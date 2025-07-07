@@ -1,0 +1,10 @@
+[package]
+name = "mb"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+inquire = "0.7.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+arboard = "3"
