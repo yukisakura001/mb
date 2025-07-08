@@ -189,6 +189,11 @@ pub fn delete_category() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub fn version() -> Result<(), Box<dyn Error>> {
+    eprintln!("Version：0.1");
+    Ok(())
+}
+
 pub fn delete_command() -> Result<(), Box<dyn Error>> {
     let mut categories = load_categories()?;
     if categories.is_empty() {

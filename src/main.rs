@@ -46,6 +46,7 @@ fn main() {
         "newcmd" => set_command(),
         "delcat" => delete_category(),
         "delcmd" => delete_command(),
+        "ver" => version(),
         _ => {
             eprintln!("不明なコマンド: {}", cmd);
             Ok(())

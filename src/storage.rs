@@ -71,6 +71,11 @@ pub fn init_demo() -> Result<(), Box<dyn Error>> {
                 run: "mb open".into(),
                 description: "config.json を開く".into(),
             },
+            CommandEntry {
+                name: "ver".into(),
+                run: "mb ver".into(),
+                description: "バージョンを確認する".into(),
+            },
         ],
     }];
     save_categories(&demo_categories)?;
