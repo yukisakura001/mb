@@ -14,7 +14,7 @@
 
 ```bash
 git clone https://github.com/yukisakura001/mb
-cd matchbox
+cd mb
 cargo build --release
 ```
 
