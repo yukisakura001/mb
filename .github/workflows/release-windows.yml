@@ -3,73 +3,84 @@ name: Build and Release (Windows)
 on:
   push:
     tags:
-      - "release" # このタグを push すると workflow が走る
+      - "release-*" # release-v0.1.5 のようなタグを push した時に実行
 
 jobs:
   build-and-release:
     runs-on: windows-latest
 
     steps:
-      # 1. ソースコードチェックアウト
+      # 1. ソースコードをチェックアウト
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Rustセットアップ
+      # 2. Rustツールチェーンのセットアップ
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
-      # 3. Cargo.tomlからバージョン取得
-      - name: Get version from Cargo.toml
-        id: version
+      # 3. release-vX.Y.Z から vX.Y.Z を抽出
+      - name: Extract release tag
+        id: extract_tag
         run: |
-          version=$(cargo pkgid | sed 's/.*#//')
-          echo "VERSION=v$version" >> $GITHUB_ENV
+          FULL_TAG=${GITHUB_REF##*/}          # 例: release-v0.1.5
+          RELEASE_TAG=${FULL_TAG#release-}    # 例: v0.1.5
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          echo "Release tag will be $RELEASE_TAG"
 
-      # 4. 新しいタグ作成 & push
-      - name: Create tag
+      # 4. 新しいタグを作成 & push
+      - name: Create release tag
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag $VERSION
-          git push origin $VERSION
+          if git rev-parse $RELEASE_TAG >/dev/null 2>&1; then
+            echo "Tag $RELEASE_TAG already exists, skipping creation"
+          else
+            git tag $RELEASE_TAG
+            git push origin $RELEASE_TAG
+          fi
 
-      # 5. ビルド
+      # 5. Rust バイナリをビルド
       - name: Build
         run: cargo build --release
 
-      # 6. コミットメッセージを取得
+      # 6. コミットメッセージを取得（リリースタイトルに使用）
       - name: Get commit message
-        run: echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
+        run: echo "RELEASE_MESSAGE=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
 
-      # 7. update.md の内容を取得
+      # 7. update.md の内容を取得（リリース本文に使用）
       - name: Get release body
         shell: bash
         run: |
-          body=$(cat update.md)
-          echo "body<<EOF" >> $GITHUB_ENV
+          if [ -f update.md ]; then
+            body=$(cat update.md)
+          else
+            body="No update.md found"
+          fi
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
           echo "$body" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       # 8. GitHub Release を作成
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.VERSION }}
-          name: ${{ env.message }}
-          body: ${{ env.body }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_MESSAGE }}
+          body: ${{ env.RELEASE_BODY }}
           draft: false
           prerelease: false
+          allow_updates: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 9. バイナリをアップロード
+      # 9. ビルドしたバイナリをアップロード
       - name: Upload binary
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.VERSION }}
-          files: target/release/mb.exe
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: target/release/mb.exe # Cargo.toml [package] name に合わせる
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
