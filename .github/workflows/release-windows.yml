@@ -3,28 +3,48 @@ name: Build and Release (Windows)
 on:
   push:
     tags:
-      - "v*" # v1.0.0 のようなタグが push された時に実行
+      - "release" # このタグを push すると workflow が走る
 
 jobs:
   build-and-release:
     runs-on: windows-latest
 
     steps:
+      # 1. ソースコードチェックアウト
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2. Rustセットアップ
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
+      # 3. Cargo.tomlからバージョン取得
+      - name: Get version from Cargo.toml
+        id: version
+        run: |
+          version=$(cargo pkgid | sed 's/.*#//')
+          echo "VERSION=v$version" >> $GITHUB_ENV
+
+      # 4. 新しいタグ作成 & push
+      - name: Create tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag $VERSION
+          git push origin $VERSION
+
+      # 5. ビルド
       - name: Build
         run: cargo build --release
 
+      # 6. コミットメッセージを取得
       - name: Get commit message
         run: echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
 
+      # 7. update.md の内容を取得
       - name: Get release body
         shell: bash
         run: |
@@ -33,25 +53,23 @@ jobs:
           echo "$body" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      # Release を作成または取得
-      - name: Create or get release
-        id: release
+      # 8. GitHub Release を作成
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.VERSION }}
           name: ${{ env.message }}
           body: ${{ env.body }}
           draft: false
           prerelease: false
-          allow_updates: true # 既存 Release があっても更新可能
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # バイナリをアップロード
+      # 9. バイナリをアップロード
       - name: Upload binary
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.VERSION }}
           files: target/release/mb.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
