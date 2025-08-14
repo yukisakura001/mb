@@ -3,7 +3,7 @@ name: Build and Release (Windows)
 on:
   push:
     tags:
-      - "release-*" # release-v0.1.5 のようなタグを push した時に実行
+      - "release-*" # release-v0.1.6 のようなタグを push した時に実行
 
 jobs:
   build-and-release:
@@ -26,22 +26,26 @@ jobs:
         id: extract_tag
         shell: pwsh
         run: |
-          $fullTag = "${env:GITHUB_REF}" -replace '.*/', ''         # release-v0.1.5
-          $releaseTag = $fullTag -replace '^release-', ''           # v0.1.5
+          $fullTag = "${env:GITHUB_REF}" -replace '.*/', ''         # release-v0.1.6
+          $releaseTag = $fullTag -replace '^release-', ''           # v0.1.6
           Write-Output "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "Release tag will be $releaseTag"
 
-      # 4. 新しいタグを作成 & push (PowerShell)
+      # 4. 新しいタグを作成 & push (既存タグがあってもエラーにならない)
       - name: Create release tag
         shell: pwsh
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          if (git rev-parse $env:RELEASE_TAG 2>$null) {
-            Write-Output "Tag $env:RELEASE_TAG already exists, skipping creation"
+
+          $ErrorActionPreference = "SilentlyContinue"
+          $tagExists = git rev-parse $env:RELEASE_TAG 2>$null
+
+          if ($tagExists) {
+              Write-Output "Tag $env:RELEASE_TAG already exists, skipping creation"
           } else {
-            git tag $env:RELEASE_TAG
-            git push origin $env:RELEASE_TAG
+              git tag $env:RELEASE_TAG
+              git push origin $env:RELEASE_TAG
           }
 
       # 5. Rust バイナリをビルド
