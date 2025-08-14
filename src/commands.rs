@@ -190,7 +190,7 @@ pub fn delete_category() -> Result<(), Box<dyn Error>> {
 }
 
 pub fn version() -> Result<(), Box<dyn Error>> {
-    eprintln!("Version：0.2.0");
+    eprintln!("Version：0.2.1");
     Ok(())
 }
 

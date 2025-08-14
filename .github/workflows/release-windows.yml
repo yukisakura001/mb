@@ -34,14 +34,14 @@ jobs:
       - name: Build
         run: cargo build --release
 
-      # 5. コミットメッセージを取得（リリースタイトルに使用）
+      # 5. コミットメッセージを取得（リリース本文に使用）
       - name: Get commit message
         shell: pwsh
         run: |
           $message = git log -1 --pretty=%B
           # 改行文字を除去してGitHub Actionsで扱いやすくする
           $message = $message -replace "`n", " " -replace "`r", ""
-          Write-Output "RELEASE_MESSAGE=$message" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output "COMMIT_MESSAGE=$message" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # 6. update.md の内容を取得（リリース本文に使用）
       - name: Get release body
@@ -65,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: ${{ env.RELEASE_MESSAGE }}
+          name: ${{ env.TAG_NAME }}
           body: ${{ env.RELEASE_BODY }}
           draft: false
           prerelease: false
