@@ -58,6 +58,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          files: target/release/あなたのバイナリ名.exe
+          files: target/release/mb.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
