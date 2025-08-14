@@ -10,29 +10,22 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # ソースコードのチェックアウト
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Rustツールチェーンのセットアップ
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
-      # ビルド
       - name: Build
         run: cargo build --release
 
-      # コミットメッセージを取得
       - name: Get commit message
-        id: get_message
         run: echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
 
-      # update.md の内容を取得
       - name: Get release body
-        id: get_body
         shell: bash
         run: |
           body=$(cat update.md)
@@ -40,9 +33,9 @@ jobs:
           echo "$body" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      # GitHub Release を作成
-      - name: Create Release
-        id: create_release
+      # Release を作成または取得
+      - name: Create or get release
+        id: release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -50,10 +43,11 @@ jobs:
           body: ${{ env.body }}
           draft: false
           prerelease: false
+          allow_updates: true # 既存 Release があっても更新可能
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 実行ファイルをアップロード
+      # バイナリをアップロード
       - name: Upload binary
         uses: softprops/action-gh-release@v2
         with:
