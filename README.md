@@ -13,8 +13,8 @@
 ## インストール
 
 ```bash
-git clone <repository-url>
-cd matchbox
+git clone https://github.com/yukisakura001/mb
+cd mb
 cargo build --release
 ```
 
