@@ -1,10 +1,16 @@
 use mb::*;
 use std::env;
-use std::path::Path;
 use std::process;
 
 fn main() {
-    let config_path = Path::new("config.json");
+    let config_path = match get_config_path() {
+        Ok(path) => path,
+        Err(e) => {
+            eprintln!("設定ファイルのパスを取得できませんでした: {}", e);
+            process::exit(1);
+        }
+    };
+
     if !config_path.exists() {
         if let Err(e) = init_demo() {
             eprintln!("初回起動: デモ設定の作成に失敗しました: {}", e);
@@ -15,7 +21,7 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("使い方: cargo run -- <init|run|cat|find|open|newcat|newcmd|delcat|delcmd>");
+        eprintln!("使い方: cargo run -- <init|run|cat|find|open|newcat|newcmd|edit|delcat|delcmd>");
         return;
     }
 
@@ -44,6 +50,7 @@ fn main() {
         "open" => open_config(),
         "newcat" => create_category(),
         "newcmd" => set_command(),
+        "edit" => edit_command(),
         "delcat" => delete_category(),
         "delcmd" => delete_command(),
         "ver" => version(),

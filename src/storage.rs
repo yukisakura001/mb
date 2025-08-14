@@ -1,10 +1,12 @@
 use crate::models::{Category, CommandEntry};
+use crate::utils::get_config_path;
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, Write};
 
 pub fn load_categories() -> Result<Vec<Category>, Box<dyn Error>> {
-    match File::open("config.json") {
+    let config_path = get_config_path()?;
+    match File::open(&config_path) {
         Ok(mut file) => {
             let mut buf = String::new();
             file.read_to_string(&mut buf)?;
@@ -16,8 +18,9 @@ pub fn load_categories() -> Result<Vec<Category>, Box<dyn Error>> {
 }
 
 pub fn save_categories(cats: &[Category]) -> Result<(), Box<dyn Error>> {
+    let config_path = get_config_path()?;
     let json = serde_json::to_string_pretty(cats)?;
-    let mut file = File::create("config.json")?;
+    let mut file = File::create(&config_path)?;
     file.write_all(json.as_bytes())?;
     Ok(())
 }
@@ -50,6 +53,11 @@ pub fn init_demo() -> Result<(), Box<dyn Error>> {
                 name: "newcmd".into(),
                 run: "mb newcmd".into(),
                 description: "カテゴリにコマンドを追加".into(),
+            },
+            CommandEntry {
+                name: "edit".into(),
+                run: "mb edit".into(),
+                description: "コマンドを編集".into(),
             },
             CommandEntry {
                 name: "delcat".into(),

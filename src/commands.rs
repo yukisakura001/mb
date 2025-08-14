@@ -190,7 +190,85 @@ pub fn delete_category() -> Result<(), Box<dyn Error>> {
 }
 
 pub fn version() -> Result<(), Box<dyn Error>> {
-    eprintln!("Version：0.1");
+    eprintln!("Version：0.1.1");
+    Ok(())
+}
+
+pub fn edit_command() -> Result<(), Box<dyn Error>> {
+    let mut categories = load_categories()?;
+    if categories.is_empty() {
+        eprintln!("カテゴリが存在しません。cargo run -- newcat で作成してください。");
+        return Ok(());
+    }
+
+    // カテゴリを選択
+    let names: Vec<String> = categories.iter().map(|c| c.name.clone()).collect();
+    let selected_cat = Select::new(
+        "編集するコマンドのカテゴリを選択してください:",
+        names.clone(),
+    )
+    .prompt()?;
+
+    let cat_idx = categories
+        .iter()
+        .position(|c| c.name == selected_cat)
+        .unwrap();
+
+    if categories[cat_idx].commands.is_empty() {
+        eprintln!(
+            "カテゴリ '{}' に編集可能なコマンドがありません。",
+            selected_cat
+        );
+        return Ok(());
+    }
+
+    // コマンドを選択
+    let cmd_choices: Vec<String> = categories[cat_idx]
+        .commands
+        .iter()
+        .map(|cmd| format!("{} ({})", cmd.name, cmd.description))
+        .collect();
+    let selected_cmd_display =
+        Select::new("編集するコマンドを選択してください:", cmd_choices.clone()).prompt()?;
+
+    let cmd_idx = cmd_choices
+        .iter()
+        .position(|c| c == &selected_cmd_display)
+        .unwrap();
+
+    let current_cmd = &categories[cat_idx].commands[cmd_idx];
+
+    println!(
+        "カテゴリ '{}' のコマンド '{}' を編集します。",
+        selected_cat, current_cmd.name
+    );
+
+    // 現在の値を初期値として入力を求める
+    let cmd_name = Text::new("コマンド名:")
+        .with_initial_value(&current_cmd.name)
+        .prompt()?;
+    let mut cmd_run = Text::new("実行文字列:")
+        .with_initial_value(&current_cmd.run)
+        .prompt()?;
+    if cmd_run.is_empty() {
+        cmd_run.push_str(&cmd_name);
+    }
+    let cmd_desc = Text::new("説明:")
+        .with_initial_value(&current_cmd.description)
+        .prompt()?;
+
+    // コマンドを更新
+    categories[cat_idx].commands[cmd_idx] = CommandEntry {
+        name: cmd_name.clone(),
+        run: cmd_run,
+        description: cmd_desc,
+    };
+
+    save_categories(&categories)?;
+    println!(
+        "カテゴリ '{}' のコマンド '{}' を更新しました。",
+        selected_cat, cmd_name
+    );
     Ok(())
 }
 

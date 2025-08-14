@@ -1,0 +1,63 @@
+name: Build and Release (Windows)
+
+on:
+  push:
+    tags:
+      - "v*" # v1.0.0 のようなタグが push された時に実行
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      # ソースコードのチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Rustツールチェーンのセットアップ
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      # ビルド
+      - name: Build
+        run: cargo build --release
+
+      # コミットメッセージを取得
+      - name: Get commit message
+        id: get_message
+        run: echo "message=$(git log -1 --pretty=%B)" >> $GITHUB_ENV
+
+      # update.md の内容を取得
+      - name: Get release body
+        id: get_body
+        shell: bash
+        run: |
+          body=$(cat update.md)
+          echo "body<<EOF" >> $GITHUB_ENV
+          echo "$body" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # GitHub Release を作成
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.message }}
+          body: ${{ env.body }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 実行ファイルをアップロード
+      - name: Upload binary
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: target/release/あなたのバイナリ名.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
