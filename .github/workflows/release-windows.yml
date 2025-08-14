@@ -3,7 +3,7 @@ name: Build and Release (Windows)
 on:
   push:
     tags:
-      - "release-*" # release-v0.1.6 のようなタグを push した時に実行
+      - "release" # release タグを push した時に実行
 
 jobs:
   build-and-release:
@@ -13,6 +13,9 @@ jobs:
       # 1. ソースコードをチェックアウト
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # タグの詳細情報（メッセージ等）を取得するため fetch-depth を 0 に設定
+          fetch-depth: 0
 
       # 2. Rustツールチェーンのセットアップ
       - name: Setup Rust
@@ -21,31 +24,65 @@ jobs:
           toolchain: stable
           override: true
 
-      # 3. release-vX.Y.Z から vX.Y.Z を抽出 (PowerShell)
-      - name: Extract release tag
-        id: extract_tag
+      # 3. タグのメッセージからバージョンを抽出
+      - name: Extract version from tag message
+        id: extract_version
         shell: pwsh
         run: |
-          $fullTag = "${env:GITHUB_REF}" -replace '.*/', ''         # release-v0.1.6
-          $releaseTag = $fullTag -replace '^release-', ''           # v0.1.6
-          Write-Output "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Output "Release tag will be $releaseTag"
+          # 現在のタグ名を取得（release）
+          $currentTag = "${env:GITHUB_REF}" -replace '.*/', ''
+          Write-Output "Current tag: $currentTag"
 
-      # 4. 注意：このワークフローは release-* タグがpushされた時に実行されるため
-      # 新しくタグを作成する必要はありません。RELEASE_TAGは既存のタグを参照します。
+          # タグのメッセージを取得
+          $tagMessage = git tag -l --format='%(contents)' $currentTag
+          Write-Output "Tag message: $tagMessage"
+
+          # メッセージからバージョンを抽出（例: "v1.2.3", "1.2.3", "version 1.2.3" など）
+          if ($tagMessage -match '(?i)(?:v|version\s+)?(\d+\.\d+\.\d+(?:\.\d+)?)') {
+            $version = $matches[1]
+            $versionTag = "v$version"
+            Write-Output "Extracted version: $version"
+            Write-Output "Version tag: $versionTag"
+
+            # 環境変数に設定
+            Write-Output "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Output "VERSION_TAG=$versionTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            Write-Error "Could not extract version from tag message: $tagMessage"
+            Write-Output "Expected format: 'v1.2.3' or '1.2.3' or 'version 1.2.3'"
+            exit 1
+          }
+
+      # 4. バージョンタグが既に存在するかチェック
+      - name: Check if version tag exists
+        shell: pwsh
+        run: |
+          try {
+            $null = git rev-parse --verify $env:VERSION_TAG 2>$null
+            Write-Output "Version tag $env:VERSION_TAG already exists"
+            Write-Output "TAG_EXISTS=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } catch {
+            Write-Output "Version tag $env:VERSION_TAG does not exist, will create new release"
+            Write-Output "TAG_EXISTS=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
       # 5. Rust バイナリをビルド
       - name: Build
         run: cargo build --release
 
-      # 6. コミットメッセージを取得（リリースタイトルに使用）
-      - name: Get commit message
+      # 6. リリースタイトルを設定（タグメッセージまたはデフォルト）
+      - name: Set release title
         shell: pwsh
         run: |
-          $message = git log -1 --pretty=%B
-          # 改行文字を除去してGitHub Actionsで扱いやすくする
-          $message = $message -replace "`n", " " -replace "`r", ""
-          Write-Output "RELEASE_MESSAGE=$message" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $tagMessage = git tag -l --format='%(contents)' release
+          if ($tagMessage -and $tagMessage.Trim() -ne "") {
+            $title = $tagMessage.Trim()
+          } else {
+            $title = "Release $env:VERSION"
+          }
+          # 改行文字を除去
+          $title = $title -replace "`n", " " -replace "`r", ""
+          Write-Output "RELEASE_TITLE=$title" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # 7. update.md の内容を取得（リリース本文に使用）
       - name: Get release body
@@ -53,26 +90,28 @@ jobs:
         run: |
           if (Test-Path update.md) {
             $body = Get-Content update.md -Raw
-            # 改行の処理を適切に行う
             $body = $body -replace "`r`n", "`n"
           } else {
-            $body = "No update.md found"
+            $body = "Release $env:VERSION"
           }
-          # 環境変数に複数行テキストを設定する場合の推奨方法
+          # 環境変数に複数行テキストを設定
           $delimiter = "EOF_DELIMITER_$(Get-Random)"
           Write-Output "RELEASE_BODY<<$delimiter" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output $body | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output $delimiter | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      # 8. GitHub Release を作成
+      # 8. GitHub Release を作成（バージョンタグが存在しない場合のみ、または更新を許可）
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: ${{ env.RELEASE_MESSAGE }}
+          tag_name: ${{ env.VERSION_TAG }}
+          name: ${{ env.RELEASE_TITLE }}
           body: ${{ env.RELEASE_BODY }}
           draft: false
           prerelease: false
-          files: target/release/mb.exe # ビルドしたバイナリも一緒にアップロード
+          files: target/release/mb.exe
+          make_latest: true
+          # 既存のリリースがある場合は更新を許可
+          allow_updates: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
