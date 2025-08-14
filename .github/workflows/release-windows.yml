@@ -31,22 +31,8 @@ jobs:
           Write-Output "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Output "Release tag will be $releaseTag"
 
-      # 4. 新しいタグを作成 & push (既存タグがあってもエラーにならない)
-      - name: Create release tag
-        shell: pwsh
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          $ErrorActionPreference = "SilentlyContinue"
-          $tagExists = git rev-parse $env:RELEASE_TAG 2>$null
-
-          if ($tagExists) {
-              Write-Output "Tag $env:RELEASE_TAG already exists, skipping creation"
-          } else {
-              git tag $env:RELEASE_TAG
-              git push origin $env:RELEASE_TAG
-          }
+      # 4. 注意：このワークフローは release-* タグがpushされた時に実行されるため
+      # 新しくタグを作成する必要はありません。RELEASE_TAGは既存のタグを参照します。
 
       # 5. Rust バイナリをビルド
       - name: Build
@@ -57,6 +43,8 @@ jobs:
         shell: pwsh
         run: |
           $message = git log -1 --pretty=%B
+          # 改行文字を除去してGitHub Actionsで扱いやすくする
+          $message = $message -replace "`n", " " -replace "`r", ""
           Write-Output "RELEASE_MESSAGE=$message" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # 7. update.md の内容を取得（リリース本文に使用）
@@ -65,10 +53,16 @@ jobs:
         run: |
           if (Test-Path update.md) {
             $body = Get-Content update.md -Raw
+            # 改行の処理を適切に行う
+            $body = $body -replace "`r`n", "`n"
           } else {
             $body = "No update.md found"
           }
-          Write-Output "RELEASE_BODY=$body" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # 環境変数に複数行テキストを設定する場合の推奨方法
+          $delimiter = "EOF_DELIMITER_$(Get-Random)"
+          Write-Output "RELEASE_BODY<<$delimiter" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output $body | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output $delimiter | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # 8. GitHub Release を作成
       - name: Create GitHub Release
@@ -79,15 +73,6 @@ jobs:
           body: ${{ env.RELEASE_BODY }}
           draft: false
           prerelease: false
-          allow_updates: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 9. ビルドしたバイナリをアップロード
-      - name: Upload binary
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: target/release/mb.exe # Cargo.toml [package] name に合わせる
+          files: target/release/mb.exe # ビルドしたバイナリも一緒にアップロード
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
