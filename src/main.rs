@@ -21,7 +21,8 @@ fn main() {
 
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("使い方: cargo run -- <init|run|cat|find|open|newcat|newcmd|edit|delcat|delcmd>");
+        eprintln!("使い方: mb <init|run|cat|find|open|newcat|newcmd|edit|delcat|delcmd|ver|help>");
+        eprintln!("詳細なヘルプは 'mb help' を実行してください。");
         return;
     }
 
@@ -54,8 +55,10 @@ fn main() {
         "delcat" => delete_category(),
         "delcmd" => delete_command(),
         "ver" => version(),
+        "help" => help(),
         _ => {
             eprintln!("不明なコマンド: {}", cmd);
+            eprintln!("利用可能なコマンドを確認するには 'cargo run -- help' を実行してください。");
             Ok(())
         }
     };

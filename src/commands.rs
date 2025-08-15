@@ -190,7 +190,40 @@ pub fn delete_category() -> Result<(), Box<dyn Error>> {
 }
 
 pub fn version() -> Result<(), Box<dyn Error>> {
-    eprintln!("Version：0.2.1");
+    eprintln!("Version：0.3.0");
+    Ok(())
+}
+
+pub fn help() -> Result<(), Box<dyn Error>> {
+    println!("mb - コマンド管理ツール");
+    println!();
+    println!("使い方:");
+    println!("  mb <コマンド> [引数...]");
+    println!();
+    println!("利用可能なコマンド:");
+    println!("  init                    デモ設定を初期化します");
+    println!("  run                     カテゴリを選択してコマンドを実行します");
+    println!("  cat <カテゴリー名>      指定したカテゴリのコマンドを表示します");
+    println!("  find <検索文字列> [オプション]  コマンドを検索します");
+    println!("    オプション:");
+    println!("      --n                 コマンド名で検索");
+    println!("      --d                 説明で検索");
+    println!("      --c                 実行文字列で検索");
+    println!("      (オプション未指定時は全てを検索対象とします)");
+    println!("  open                    設定ファイルを開きます");
+    println!("  newcat                  新しいカテゴリを作成します");
+    println!("  newcmd                  既存のカテゴリにコマンドを追加します");
+    println!("  edit                    既存のコマンドを編集します");
+    println!("  delcat                  カテゴリを削除します");
+    println!("  delcmd                  コマンドを削除します");
+    println!("  ver                     バージョン情報を表示します");
+    println!("  help                    このヘルプメッセージを表示します");
+    println!();
+    println!("例:");
+    println!("  mb run                  # カテゴリを選択してコマンドを実行");
+    println!("  mb cat git              # gitカテゴリのコマンドを表示");
+    println!("  mb find docker          # dockerを含むコマンドを検索");
+    println!("  mb find status --n      # コマンド名にstatusを含むものを検索");
     Ok(())
 }
 
