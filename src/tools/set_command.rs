@@ -1,4 +1,5 @@
 use super::command::Command;
+use super::get_config_path::get_config_path;
 use super::get_json::get_json;
 use inquire::Text;
 use std::fs::File;
@@ -39,7 +40,7 @@ pub fn set_command() {
         .chain(std::iter::once(new_command))
         .collect::<Vec<Command>>();
     let json = serde_json::to_string_pretty(&updated_commands).unwrap();
-    let mut file = File::create("config.json").unwrap();
+    let mut file = File::create(get_config_path()).unwrap();
     file.write_all(json.as_bytes()).unwrap();
     println!("コマンドを登録しました。");
 }

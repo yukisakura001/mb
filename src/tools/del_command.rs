@@ -1,3 +1,4 @@
+use super::get_config_path::get_config_path;
 use super::get_json::get_json;
 use crate::tools::command;
 use inquire::{Select, error::InquireError};
@@ -47,7 +48,7 @@ pub fn del_command(args: Vec<String>) {
             commands.retain(|c| c != &selected_command);
 
             let json = serde_json::to_string_pretty(&commands).unwrap();
-            let mut file = File::create("config.json").unwrap();
+            let mut file = File::create(get_config_path()).unwrap();
             file.write_all(json.as_bytes()).unwrap();
 
             println!("コマンドを削除しました: {}", selected_command);

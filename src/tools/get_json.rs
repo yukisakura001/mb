@@ -1,8 +1,9 @@
 use super::command::Command;
+use super::get_config_path::get_config_path;
 use std::fs;
 
 pub fn get_json() -> Vec<Command> {
-    let json_str = match fs::read_to_string("config.json") {
+    let json_str = match fs::read_to_string(get_config_path()) {
         Ok(content) => content,
         Err(_) => {
             println!("config.jsonが見つかりません。初期化処理を実行してください。");
