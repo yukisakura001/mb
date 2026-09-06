@@ -9,5 +9,5 @@ pub fn get_config_path() -> std::path::PathBuf {
             panic!("Failed to get current exe path: {}", e);
         }
     };
-    get_config_path
+    return get_config_path;
 }

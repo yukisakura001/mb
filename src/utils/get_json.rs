@@ -1,5 +1,5 @@
-use super::command::Command;
-use super::get_config_path::get_config_path;
+use crate::utils::command::Command;
+use crate::utils::get_config_path::get_config_path;
 use std::fs;
 
 pub fn get_json() -> Vec<Command> {

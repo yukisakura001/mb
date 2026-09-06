@@ -1,12 +1,10 @@
-use super::get_config_path::get_config_path;
-use super::get_json::get_json;
-use crate::tools::command;
-use inquire::{Select, error::InquireError};
-use std::fs::File;
-use std::io::Write;
+use crate::utils::command;
 
-pub fn del_command(args: Vec<String>) {
-    let mut commands = get_json();
+use crate::utils::get_json::get_json;
+use inquire::{Select, error::InquireError};
+
+pub fn select_command(args: Vec<String>) -> Option<command::Command> {
+    let commands = get_json();
     let command_list: Vec<&command::Command>;
     if args.len() > 2 {
         let category_name = &args[2];
@@ -33,7 +31,7 @@ pub fn del_command(args: Vec<String>) {
             }
             Err(err) => {
                 println!("エラー: {}", err);
-                return;
+                return None;
             }
         }
     }
@@ -42,17 +40,10 @@ pub fn del_command(args: Vec<String>) {
         Select::new("コマンドを選択してください", command_list).prompt();
 
     match command_selection {
-        Ok(selection) => {
-            let selected_command = selection.clone();
-
-            commands.retain(|c| c != &selected_command);
-
-            let json = serde_json::to_string_pretty(&commands).unwrap();
-            let mut file = File::create(get_config_path()).unwrap();
-            file.write_all(json.as_bytes()).unwrap();
-
-            println!("コマンドを削除しました: {}", selected_command);
+        Ok(selection) => Some(selection.clone()),
+        Err(err) => {
+            println!("エラー: {}", err);
+            return None;
         }
-        Err(err) => println!("エラー: {}", err),
     }
 }

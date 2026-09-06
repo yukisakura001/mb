@@ -1,5 +1,5 @@
-use super::command::Command;
-use super::get_config_path::get_config_path;
+use crate::utils::command::Command;
+use crate::utils::get_config_path::get_config_path;
 use serde_json;
 use std::fs::File;
 use std::io::Write;

@@ -1,6 +1,6 @@
-use super::command::Command;
-use super::get_config_path::get_config_path;
-use super::get_json::get_json;
+use crate::utils::command::Command;
+use crate::utils::get_config_path::get_config_path;
+use crate::utils::get_json::get_json;
 use inquire::Text;
 use std::fs::File;
 use std::io::Write;
